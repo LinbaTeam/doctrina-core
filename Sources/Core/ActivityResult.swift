@@ -35,4 +35,9 @@ public struct ActivityResult<ActivityType> {
   }
 }
 
+extension ActivityResultStatus: Equatable {}
+extension ActivityResultStatus: Codable {}
+
 extension ActivityResult: Equatable where ActivityType: Equatable {}
+extension ActivityResult: Decodable where ActivityType: Decodable {}
+extension ActivityResult: Encodable where ActivityType: Encodable {}
