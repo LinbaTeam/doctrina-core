@@ -11,65 +11,77 @@ final class EngineTests: XCTestCase {
 
     let store = TestStore(
       initialState: Engine.State(
-        stats: [],
-        activity: .check(TestActivity.State.one)
+        stats: [:],
+        activity: .one,
+        core: CoreState()
       ),
       reducer: Engine(
-        activity: Activity(
-          checkActivity: TestActivity(),
-          otherActivity: EmptyReducer<Never, Never>()
-        ),
-        nextActivity: { .check(.two) }
+        activity: TestActivity(),
+        nextActivity: { _, _ in .two }
       )
     ) {
       $0.date = DateGenerator { now }
     }
 
-    await store.send(.check(.checkAnswer))
+    await store.send(.core(.checkAnswer))
 
     let result = ActivityResult<TestActivityType>(
       activityType: .one,
       date: now,
       status: .correct
     )
-    await store.receive(.check(.delegate(.storeResult(.correct)))) {
-      $0.stats.append(result)
+    await store.receive(.delegate(type: .one, action: .storeResult("1", .correct))) {
+      $0.stats["1"] = [result]
     }
 
-    await store.receive(.check(.delegate(.activityWasCompleted))) {
-      $0.activity = .check(.two)
+    await store.receive(.delegate(type: .one, action: .activityWasCompleted)) {
+      $0.activity = .two
     }
   }
 }
 
+private struct CoreState: Equatable {}
+
 private struct TestActivity: ReducerProtocol {
-  enum State: Equatable, CheckActivityState {
+  enum State: Equatable {
     case one
     case two
 
-    var activityType: TestActivityType {
+    var type: TestActivityType {
       switch self {
       case .one: return .one
       case .two: return .two
       }
     }
+
+    var itemID: String {
+      switch self {
+      case .one: return "1"
+      case .two: return "2"
+      }
+    }
   }
 
-  enum CoreAction: Equatable {}
+  enum CoreAction: Equatable {
+    case checkAnswer
+  }
 
-  typealias Action = CheckActivityAction<CoreAction>
+  public typealias Action = ActivityContainerAction<TestActivityType, String, CoreAction>
 
   var body: some ReducerProtocol<State, Action> {
     Reduce { state, action in
       switch action {
-      case .checkAnswer:
+      case .core(.checkAnswer):
+        let type = state.type
+        let itemID = state.itemID
         return .merge(
-          .task { .delegate(.storeResult(.correct)) },
-          .task { .delegate(.activityWasCompleted) }
+          .task {
+            .delegate(type: type, action: .storeResult(itemID, .correct))
+          },
+          .task {
+            .delegate(type: type, action: .activityWasCompleted)
+          }
         )
-
-      case .core:
-        return .none
 
       case .delegate:
         return .none
