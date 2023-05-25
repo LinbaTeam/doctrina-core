@@ -7,11 +7,14 @@ import Core
 @MainActor
 final class EngineTests: XCTestCase {
   func testAppendsStats() async {
+    var anylticsEvents: [Analytics.Event] = []
     let now = Date()
 
     let store = TestStore(
       initialState: Engine.State(
-        stats: [:],
+        itemsWithStats: [
+          .init(item: TestItem(id: "1"), stats: []),
+        ],
         activity: .one,
         core: CoreState()
       ),
@@ -20,7 +23,8 @@ final class EngineTests: XCTestCase {
         nextActivity: { _, _ in .two }
       )
     ) {
-      $0.date = DateGenerator { now }
+      $0.analytics = Analytics { anylticsEvents.append($0) }
+      $0.date = .constant(now)
     }
 
     await store.send(.core(.checkAnswer))
@@ -31,16 +35,22 @@ final class EngineTests: XCTestCase {
       status: .correct
     )
     await store.receive(.delegate(type: .one, action: .storeResult("1", .correct))) {
-      $0.stats["1"] = [result]
+      $0.itemsWithStats[id: "1"]?.stats = [result]
     }
 
     await store.receive(.delegate(type: .one, action: .activityWasCompleted)) {
       $0.activity = .two
     }
+
+    XCTAssertEqual(anylticsEvents, [.init(name: "ACTIVITY_COMPLETED")])
   }
 }
 
 private struct CoreState: Equatable {}
+
+private struct TestItem: Equatable, Identifiable {
+  var id: String
+}
 
 private struct TestActivity: ReducerProtocol {
   enum State: Equatable {
