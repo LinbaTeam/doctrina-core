@@ -6,9 +6,11 @@ public struct Engine<
   ActivityType,
   CoreAction,
   CoreState,
-  ItemID: Hashable
+  Item: Identifiable
 >: ReducerProtocol where
-Activity.Action == ActivityContainerAction<ActivityType, ItemID, CoreAction> {
+Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
+  public typealias ItemWithStatsArray = IdentifiedArrayOf<ItemWithStats<Item, ActivityType>>
+
   /// Implement this closure to provide continuous flow of activies.
   ///
   /// - Parameters
@@ -16,17 +18,12 @@ Activity.Action == ActivityContainerAction<ActivityType, ItemID, CoreAction> {
   ///  - CoreState mutable core state in case activity changing needs to mark some flags.
   ///
   /// Note: For correct animations consider changing activity type each type closure is called.
-  public typealias NextActivity = (
-    State.Stats,
-    inout CoreState
-  ) -> Activity.State
+  public typealias NextActivity = (ItemWithStatsArray, inout CoreState) -> Activity.State
 
   @dynamicMemberLookup
   public struct State {
-    /// Activity completion statistics. Could be used to track user's progress in learning.
-    public typealias Stats = [ItemID: [ActivityResult<ActivityType>]]
 
-    public var stats: Stats
+    public var itemsWithStats: ItemWithStatsArray
     public var activity: Activity.State
 
     /// Container to store additional state.
@@ -40,11 +37,11 @@ Activity.Action == ActivityContainerAction<ActivityType, ItemID, CoreAction> {
     }
 
     public init(
-      stats: Stats,
+      itemsWithStats: ItemWithStatsArray,
       activity: Activity.State,
       core: CoreState
     ) {
-      self.stats = stats
+      self.itemsWithStats = itemsWithStats
       self.activity = activity
       self.core = core
     }
@@ -52,10 +49,15 @@ Activity.Action == ActivityContainerAction<ActivityType, ItemID, CoreAction> {
 
   public typealias Action = Activity.Action
 
+  /// Current activity. Changes when currect activity sends |activityWasCompleted| action.
+  /// New activity is gathered by calling |nextActivity| closure.
   public var activity: Activity
+
+  /// A closure to deliver activities into the system.
   public var nextActivity: NextActivity
 
   @Dependency(\.date) var now
+  @Dependency(\.analytics) var analytics
 
   public init(
     activity: Activity,
@@ -76,12 +78,14 @@ Activity.Action == ActivityContainerAction<ActivityType, ItemID, CoreAction> {
             date: now(),
             status: status
           )
-          state.stats[itemID, default: []].append(result)
+          state.itemsWithStats[id: itemID]?.stats.append(result)
           return .none
 
         case .activityWasCompleted:
-          state.activity = nextActivity(state.stats, &state.core)
-          return .none
+          state.activity = nextActivity(state.itemsWithStats, &state.core)
+          return .fireAndForget { [analytics] in
+            analytics(Analytics.Event(name: "ACTIVITY_COMPLETED"))
+          }
         }
 
       case .core:
@@ -95,4 +99,5 @@ Activity.Action == ActivityContainerAction<ActivityType, ItemID, CoreAction> {
 extension Engine.State: Equatable where
 Activity.State: Equatable,
 ActivityType: Equatable,
-CoreState: Equatable {}
+CoreState: Equatable,
+Item: Equatable {}
