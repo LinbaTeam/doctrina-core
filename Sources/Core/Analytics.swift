@@ -23,14 +23,14 @@ public struct Analytics {
     public var name: String
 
     /// Optional parameters with some additional information.
-    public var parameters: [String: String]?
+    public var parameters: [String: AnyHashable]?
 
     /// - Parameters
     ///  - name: unique event name
     ///  - parameters: optional parameters with some additional information.
     public init(
       name: String,
-      parameters: [String: String]? = nil
+      parameters: [String: AnyHashable]? = nil
     ) {
       self.name = name
       self.parameters = parameters
