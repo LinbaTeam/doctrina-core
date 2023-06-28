@@ -19,11 +19,13 @@ public struct Analytics {
   /// )
   /// ```
   public struct Event {
+    public typealias Parameters = [String: AnyHashable]
+
     /// Event name. Should be unique across application.
     public var name: String
 
     /// Optional parameters with some additional information.
-    public var parameters: [String: AnyHashable]?
+    public var parameters: Parameters?
 
     /// - Parameters
     ///  - name: unique event name

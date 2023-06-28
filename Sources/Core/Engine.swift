@@ -81,10 +81,15 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
           state.itemsWithStats[id: itemID]?.stats.append(result)
           return .none
 
-        case .activityWasCompleted:
+        case let .activityWasCompleted(eventParameters):
           state.activity = nextActivity(state.itemsWithStats, &state.core)
           return .fireAndForget { [analytics] in
-            analytics(Analytics.Event(name: "ACTIVITY_COMPLETED"))
+            analytics(
+              Analytics.Event(
+                name: "ACTIVITY_COMPLETED",
+                parameters: eventParameters
+              )
+            )
           }
         }
 
