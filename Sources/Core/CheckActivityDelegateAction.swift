@@ -10,7 +10,7 @@
 /// ```
 public enum CheckActivityDelegateAction<ItemID: Hashable> {
   case storeResult(ItemID, ActivityResultStatus)
-  case activityWasCompleted
+  case activityWasCompleted(Analytics.Event.Parameters)
 }
 
 extension CheckActivityDelegateAction: Equatable {}

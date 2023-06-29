@@ -38,7 +38,7 @@ final class EngineTests: XCTestCase {
       $0.itemsWithStats[id: "1"]?.stats = [result]
     }
 
-    await store.receive(.delegate(type: .one, action: .activityWasCompleted)) {
+    await store.receive(.delegate(type: .one, action: .activityWasCompleted([:]))) {
       $0.activity = .two
     }
 
@@ -89,7 +89,7 @@ private struct TestActivity: ReducerProtocol {
             .delegate(type: type, action: .storeResult(itemID, .correct))
           },
           .task {
-            .delegate(type: type, action: .activityWasCompleted)
+            .delegate(type: type, action: .activityWasCompleted([:]))
           }
         )
 
