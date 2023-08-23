@@ -10,19 +10,28 @@ final class EngineTests: XCTestCase {
     var anylticsEvents: [Analytics.Event] = []
     let now = Date()
 
-    let store = TestStore(
-      initialState: Engine.State(
+    typealias TestEngine = Engine<
+      TestActivity,
+      TestActivityType,
+      TestActivity.CoreAction,
+      CoreState,
+      TestItem
+    >
+
+    let store = TestStoreOf<TestEngine>(
+      initialState: TestEngine.State(
         itemsWithStats: [
           .init(item: TestItem(id: "1"), stats: []),
         ],
         activity: .one,
         core: CoreState()
-      ),
-      reducer: Engine(
+      )
+    ) {
+      TestEngine(
         activity: TestActivity(),
         nextActivity: { _, _ in .two }
       )
-    ) {
+    } withDependencies: {
       $0.analytics = Analytics { anylticsEvents.append($0) }
       $0.date = .constant(now)
     }
@@ -42,7 +51,7 @@ final class EngineTests: XCTestCase {
       $0.activity = .two
     }
 
-    XCTAssertEqual(anylticsEvents, [.init(name: "ACTIVITY_COMPLETED")])
+    XCTAssertEqual(anylticsEvents, [.init(name: "ACTIVITY_COMPLETED", parameters: [:])])
   }
 }
 
@@ -52,7 +61,7 @@ private struct TestItem: Equatable, Identifiable {
   var id: String
 }
 
-private struct TestActivity: ReducerProtocol {
+private struct TestActivity: Reducer {
   enum State: Equatable {
     case one
     case two
@@ -78,20 +87,16 @@ private struct TestActivity: ReducerProtocol {
 
   public typealias Action = ActivityContainerAction<TestActivityType, String, CoreAction>
 
-  var body: some ReducerProtocol<State, Action> {
+  var body: some ReducerOf<TestActivity> {
     Reduce { state, action in
       switch action {
       case .core(.checkAnswer):
         let type = state.type
         let itemID = state.itemID
-        return .merge(
-          .task {
-            .delegate(type: type, action: .storeResult(itemID, .correct))
-          },
-          .task {
-            .delegate(type: type, action: .activityWasCompleted([:]))
-          }
-        )
+        return .run { send in
+          await send(.delegate(type: type, action: .storeResult(itemID, .correct)))
+          await send(.delegate(type: type, action: .activityWasCompleted([:])))
+        }
 
       case .delegate:
         return .none
