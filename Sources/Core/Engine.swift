@@ -2,12 +2,12 @@ import ComposableArchitecture
 
 /// Engine of learning process. Manages activities, stores statistics and more.
 public struct Engine<
-  Activity: ReducerProtocol,
+  Activity: Reducer,
   ActivityType,
   CoreAction,
   CoreState,
   Item: Identifiable
->: ReducerProtocol where
+>: Reducer where
 Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
   public typealias ItemWithStatsArray = IdentifiedArrayOf<ItemWithStats<Item, ActivityType>>
 
@@ -22,7 +22,6 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
 
   @dynamicMemberLookup
   public struct State {
-
     public var itemsWithStats: ItemWithStatsArray
     public var activity: Activity.State
 
@@ -67,7 +66,7 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
     self.nextActivity = nextActivity
   }
 
-  public var body: some ReducerProtocol<State, Action> {
+  public var body: some ReducerOf<Engine> {
     Reduce { [nextActivity, now] state, action in
       switch action {
       case let .delegate(activityType, action):
@@ -83,7 +82,7 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
 
         case let .activityWasCompleted(eventParameters):
           state.activity = nextActivity(state.itemsWithStats, &state.core)
-          return .fireAndForget { [analytics] in
+          return .run { [analytics] _ in
             analytics(
               Analytics.Event(
                 name: "ACTIVITY_COMPLETED",
