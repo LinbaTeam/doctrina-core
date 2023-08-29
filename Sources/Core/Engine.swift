@@ -6,7 +6,7 @@ public struct Engine<
   ActivityType,
   CoreAction,
   CoreState,
-  Item: Identifiable
+  Item: ActivityItem & Identifiable
 >: Reducer where
 Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
   public typealias ItemWithStatsArray = IdentifiedArrayOf<ItemWithStats<Item, ActivityType>>
@@ -78,7 +78,21 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
             status: status
           )
           state.itemsWithStats[id: itemID]?.stats.append(result)
-          return .none
+          var eventParameters: [String: AnyHashable] = [
+            "type": String(describing: activityType),
+            "answer": String(describing: result.status),
+          ]
+          if let item = state.itemsWithStats[id: itemID]?.item {
+            eventParameters["item"] = item.analyticsDescription
+          }
+          return .run { [analytics, eventParameters] _ in
+            analytics(
+              Analytics.Event(
+                name: "ACTIVITY_ANSWER_GIVEN",
+                parameters: eventParameters
+              )
+            )
+          }
 
         case let .activityWasCompleted(eventParameters):
           state.activity = nextActivity(state.itemsWithStats, &state.core)

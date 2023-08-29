@@ -1,6 +1,7 @@
 import XCTest
 
 import ComposableArchitecture
+import CustomDump
 
 import Core
 
@@ -51,7 +52,15 @@ final class EngineTests: XCTestCase {
       $0.activity = .two
     }
 
-    XCTAssertEqual(anylticsEvents, [
+    XCTAssertNoDifference(anylticsEvents, [
+      Analytics.Event(
+        name: "ACTIVITY_ANSWER_GIVEN",
+        parameters: [
+            "answer": "correct",
+            "item": "1",
+            "type": "one"
+          ]
+      ),
       .init(
         name: "ACTIVITY_COMPLETED",
         parameters: ["type": "one"]
@@ -62,8 +71,9 @@ final class EngineTests: XCTestCase {
 
 private struct CoreState: Equatable {}
 
-private struct TestItem: Equatable, Identifiable {
+private struct TestItem: Equatable, Identifiable, ActivityItem {
   var id: String
+  var analyticsDescription: String { id }
 }
 
 private struct TestActivity: Reducer {
