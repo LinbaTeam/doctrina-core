@@ -1,5 +1,11 @@
+/// Conform this protocol to
+public protocol ActivityItem {
+  /// A string to appear in analytics events related to this item.
+  var analyticsDescription: String { get }
+}
+
 /// A Pair of primary learning item and its stats.
-public struct ItemWithStats<Item, ActivityType> {
+public struct ItemWithStats<Item: ActivityItem, ActivityType> {
   /// Activity completion statistics. Could be used to track user's progress in learning.
   public typealias Stats = [ActivityResult<ActivityType>]
 
