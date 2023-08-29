@@ -82,7 +82,9 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
 
         case let .activityWasCompleted(eventParameters):
           state.activity = nextActivity(state.itemsWithStats, &state.core)
-          return .run { [analytics] _ in
+          var eventParameters = eventParameters
+          eventParameters["type"] = String(describing: activityType)
+          return .run { [analytics, eventParameters] _ in
             analytics(
               Analytics.Event(
                 name: "ACTIVITY_COMPLETED",

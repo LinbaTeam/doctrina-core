@@ -51,7 +51,12 @@ final class EngineTests: XCTestCase {
       $0.activity = .two
     }
 
-    XCTAssertEqual(anylticsEvents, [.init(name: "ACTIVITY_COMPLETED", parameters: [:])])
+    XCTAssertEqual(anylticsEvents, [
+      .init(
+        name: "ACTIVITY_COMPLETED",
+        parameters: ["type": "one"]
+      ),
+    ])
   }
 }
 
