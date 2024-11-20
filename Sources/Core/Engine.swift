@@ -21,6 +21,7 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
   public typealias NextActivity = (ItemWithStatsArray, inout CoreState) -> Activity.State
 
   @dynamicMemberLookup
+  @ObservableState
   public struct State {
     public var itemsWithStats: ItemWithStatsArray
     public var activity: Activity.State
