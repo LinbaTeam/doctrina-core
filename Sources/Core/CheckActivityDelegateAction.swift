@@ -1,3 +1,5 @@
+import ComposableArchitecture
+
 /// Add this action as delegate action in your activites.
 ///
 /// ```swift
@@ -8,6 +10,7 @@
 ///   }
 /// }
 /// ```
+@CasePathable
 public enum CheckActivityDelegateAction<ItemID: Hashable> {
   case storeResult(ItemID, ActivityResultStatus)
   case activityWasCompleted(Analytics.Event.Parameters)
