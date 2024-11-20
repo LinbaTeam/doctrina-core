@@ -1,3 +1,5 @@
+import ComposableArchitecture
+
 /// Use this as action for activity reducer.
 ///
 /// ```swift
@@ -38,6 +40,7 @@
 /// ```
 ///
 /// In future there should be a way to ged rid of boilerplate inside body property.
+@CasePathable
 public enum ActivityContainerAction<ActivityType, ItemID: Hashable, CoreAction> {
   case core(CoreAction)
   case delegate(type: ActivityType, action: CheckActivityDelegateAction<ItemID>)
