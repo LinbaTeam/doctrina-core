@@ -1,14 +1,16 @@
 import ComposableArchitecture
 
 /// Engine of learning process. Manages activities, stores statistics and more.
+@Reducer
 public struct Engine<
   Activity: Reducer,
-  ActivityType,
-  CoreAction,
-  CoreState,
-  Item: ActivityItem & Identifiable
->: Reducer where
-Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
+  ActivityType: Equatable,
+  CoreAction: Equatable,
+  CoreState: Equatable,
+  Item: ActivityItem & Identifiable & Equatable
+> where
+Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction>,
+Activity.State: Equatable {
   public typealias ItemWithStatsArray = IdentifiedArrayOf<ItemWithStats<Item, ActivityType>>
 
   /// Implement this closure to provide continuous flow of activies.
@@ -22,7 +24,7 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
 
   @dynamicMemberLookup
   @ObservableState
-  public struct State {
+  public struct State: Equatable {
     public var itemsWithStats: ItemWithStatsArray
     public var activity: Activity.State
 
@@ -113,12 +115,6 @@ Activity.Action == ActivityContainerAction<ActivityType, Item.ID, CoreAction> {
         return .none
       }
     }
-    Scope(state: \.activity, action: /Action.self, child: { activity })
+    Scope(state: \.activity, action: \.self) { activity }
   }
 }
-
-extension Engine.State: Equatable where
-Activity.State: Equatable,
-ActivityType: Equatable,
-CoreState: Equatable,
-Item: Equatable {}
